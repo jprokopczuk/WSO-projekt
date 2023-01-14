@@ -34,7 +34,7 @@ public class WsoExperiment {
 	@SuppressWarnings("unused")
 	public static void main(String[] args) {
 
-		Log.printLine("Starting CloudSimExample1...");
+		Log.printLine("Starting WSO Experiment...");
 
 		try {
 			// First step: Initialize the CloudSim package. It should be called
@@ -98,9 +98,10 @@ public class WsoExperiment {
 //			Log.printLine(utilization);
 			printCloudletList(newList);
 			
-			printExperimentStatistics(newList);
+			printExperimentSummary(newList);
 			
-			Log.printLine("CloudSimExample1 finished!");
+			Log.printLine();
+			Log.printLine("Experiment finished!");
 		} catch (Exception e) {
 			e.printStackTrace();
 			Log.printLine("Unwanted errors happen");
@@ -262,39 +263,19 @@ public class WsoExperiment {
 		}
 	}
 	
-	private static void printExperimentStatistics(List<Cloudlet> list) {
+	private static void printExperimentSummary(List<Cloudlet> list) {
 		double timeArray[];
 		Cloudlet cloudlet;
 		
 		// Every cell is zero by default
 		timeArray = new double[5];
 		
-		String indent = "    ";
-		
 		Log.printLine();
-		Log.printLine("TEEEEST");
-		Log.printLine();
+		Log.printLine("========== SUMMARY ==========");
 		
-		DecimalFormat dft = new DecimalFormat("###.##");
 		for (int i = 0; i < list.size(); i++) {
 			cloudlet = list.get(i);
 			timeArray[cloudlet.getVmId()] = timeArray[cloudlet.getVmId()] + cloudlet.getActualCPUTime();
-			
-//			Log.print(indent + cloudlet.getCloudletId() + indent + indent);
-
-//			if (cloudlet.getCloudletStatus() == Cloudlet.SUCCESS) {
-//				Log.print("SUCCESS");
-//
-//				Log.printLine(indent + indent + cloudlet.getResourceId()
-//						+ indent + indent + indent + cloudlet.getVmId()
-//						+ indent + indent
-//						+ dft.format() + indent
-//						+ indent + dft.format(cloudlet.getExecStartTime())
-//						+ indent + indent
-//						+ dft.fo	rmat(cloudlet.getFinishTime())
-//						+ indent + indent
-//						+ dft.format(cloudlet.getUtilizationOfRam(cloudlet.getActualCPUTime())));
-//			}
 		}
 		
 		DecimalFormat dftSummary = new DecimalFormat("###########.##");
@@ -319,23 +300,6 @@ public class WsoExperiment {
 		}
 		// TODO: Watts?
 		Log.printLine("Total power used: " + powerUsed + "[W]");
-//		Vm vm;
-//		
-//		String indent = "    ";
-//		Log.printLine();
-//		Log.printLine("========== EXP STATISTICS ==========");
-//		Log.printLine("Vm ID" + indent + "Total CPU Utilization" + indent +
-//					"Total Utilization Of Cpu Mips");
-//
-//		DecimalFormat dft = new DecimalFormat("###.##");
-//		for (int i = 0; i < size; i++) {
-//			vm = list.get(i);
-//			Log.print(indent + vm.getId() + indent + indent);
-//			Log.printLine(
-//					indent +  vm.getTotalUtilizationOfCpu(time)
-//					+ indent + indent + indent + indent + indent + indent + indent
-//					+ dft.format(vm.getTotalUtilizationOfCpuMips(time)));
-//			}
 	}
 	
   public static List<Vm> createIdenticalVM(int brokerId, int vms) {
