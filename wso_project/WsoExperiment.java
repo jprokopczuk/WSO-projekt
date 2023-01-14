@@ -311,6 +311,14 @@ public class WsoExperiment {
 		
 		Log.printLine("Worst time (total time): " + worstTime + "[s] on VM: "+ dftSummary.format(worstTimeVMId));
 		
+		double powerUsed = 0;
+		for(int i=0; i< list.size(); i++)
+		{
+			cloudlet = list.get(i);
+			powerUsed = powerUsed + cloudlet.getUtilizationOfCpu(cloudlet.getActualCPUTime());
+		}
+		// TODO: Watts?
+		Log.printLine("Total power used: " + powerUsed + "[W]");
 //		Vm vm;
 //		
 //		String indent = "    ";
