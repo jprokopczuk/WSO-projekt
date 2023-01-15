@@ -31,9 +31,12 @@ public class WsoExperiment {
 	/** The vmlist. */
 	private static List<Vm> vmlist;
 	
+	public static long seed;
+	
 	@SuppressWarnings("unused")
 	public static void main(String[] args) {
 
+		WsoExperiment.seed = 100;
 		Log.printLine("Starting WSO Experiment...");
 
 		try {
@@ -427,11 +430,15 @@ public class WsoExperiment {
     }
     
     private static int getRandomNumber(int min, int max) {
-        return (int) ((Math.random() * (max - min)) + min);
+    	WsoExperiment.seed = WsoExperiment.seed + 1;
+    	Random generator = new Random(seed);
+        return (int) ((generator.nextDouble() * (max - min)) + min);
     }
     
     private static long getRandomNumber(long min, long max) {
-        return (long) ((Math.random() * (max - min)) + min);
+    	WsoExperiment.seed = WsoExperiment.seed + 1;
+    	Random generator = new Random(seed);
+        return (long) ((generator.nextDouble() * (max - min)) + min);
     }
 
 }
