@@ -265,41 +265,64 @@ public class WsoExperiment {
 	
 	private static void printExperimentSummary(List<Cloudlet> list) {
 		double timeArray[];
+		double powerArray[];
+		double taskSize[];
 		Cloudlet cloudlet;
 		
 		// Every cell is zero by default
 		timeArray = new double[5];
+		powerArray = new double[5];
+		taskSize = new double[5];
 		
 		Log.printLine();
 		Log.printLine("========== SUMMARY ==========");
 		
 		for (int i = 0; i < list.size(); i++) {
 			cloudlet = list.get(i);
-			timeArray[cloudlet.getVmId()] = timeArray[cloudlet.getVmId()] + cloudlet.getActualCPUTime();
-		}
-		
-		DecimalFormat dftSummary = new DecimalFormat("###########.##");
-		double worstTime = 0;
-		int worstTimeVMId = 0;
-		for(int i=0;i < 5; ++i){
-			if(timeArray[i] > worstTime)
+			if(timeArray[cloudlet.getVmId()] < cloudlet.getActualCPUTime())
 			{
-				worstTime = timeArray[i];
-				worstTimeVMId = i;
+				timeArray[cloudlet.getVmId()] = cloudlet.getActualCPUTime();
 			}
-			Log.printLine("VM id: " + i +  ", VM time: " + dftSummary.format(timeArray[i]) + "[s]");
 		}
-		
-		Log.printLine("Worst time (total time): " + worstTime + "[s] on VM: "+ dftSummary.format(worstTimeVMId));
 		
 		double powerUsed = 0;
 		for(int i=0; i< list.size(); i++)
 		{
 			cloudlet = list.get(i);
 			powerUsed = powerUsed + cloudlet.getUtilizationOfCpu(cloudlet.getActualCPUTime());
+			powerArray[cloudlet.getVmId()] = powerArray[cloudlet.getVmId()] +  cloudlet.getUtilizationOfCpu(cloudlet.getActualCPUTime());
+			taskSize[cloudlet.getVmId()] = taskSize[cloudlet.getVmId()] + cloudlet.getCloudletTotalLength();
 		}
+		
+		DecimalFormat dftSummary = new DecimalFormat("###########.##");
+		double worstTime = 0;
+		int worstTimeVMId = 0;
+		
+		double worstPowerUsage = 0;
+		int worstpowerVMId = 0;
+		for(int i=0;i < 5; ++i){
+			if(timeArray[i] > worstTime)
+			{
+				worstTime = timeArray[i];
+				worstTimeVMId = i;
+			}
+			
+			if(powerArray[i] > worstPowerUsage)
+			{
+				worstPowerUsage = powerArray[i];
+				worstpowerVMId = i;
+			}
+			Log.printLine("VM id: " + i +  ", VM time: " + dftSummary.format(timeArray[i]/1000) +
+					"[s], power used: " + dftSummary.format(powerArray[i]) + "[W], total task size: " + 
+					dftSummary.format(taskSize[i]) + ", efficiency: " + taskSize[i]/powerArray[i]);
+		}
+		
+		Log.printLine("Worst time (total time): " + dftSummary.format(worstTime) + "[s] on VM: "+
+		worstTimeVMId);
+		
 		// TODO: Watts?
-		Log.printLine("Total power used: " + powerUsed + "[W]");
+		Log.printLine("Total power used: " + dftSummary.format(powerUsed) + "[W], worst power usage: " 
+		+ dftSummary.format(worstPowerUsage) + "[W] on VM:" + worstpowerVMId);
 	}
 	
   public static List<Vm> createIdenticalVM(int brokerId, int vms) {
