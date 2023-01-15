@@ -15,12 +15,13 @@ import org.cloudbus.cloudsim.Log;
 import org.cloudbus.cloudsim.Vm;
 import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.core.CloudSimTags;
+import org.cloudbus.cloudsim.core.SimEvent;
 import org.cloudbus.cloudsim.lists.VmList;
 
 public class DatacenterBrokerWso extends DatacenterBroker {
 	
 	private String allocationAlgorithm;
-	private ArrayList<Long> vmCurrRam;
+	private ArrayList<Integer> vmCurrCPU;
 	
 	public DatacenterBrokerWso(String name, String allocationAlgorithm) throws Exception {
 		super(name);
@@ -45,6 +46,38 @@ public class DatacenterBrokerWso extends DatacenterBroker {
 	}
 	
 	@Override
+	public void processEvent(SimEvent ev) {
+		switch (ev.getTag()) {
+		// Resource characteristics request
+			case CloudSimTags.RESOURCE_CHARACTERISTICS_REQUEST:
+				processResourceCharacteristicsRequest(ev);
+				break;
+			// Resource characteristics answer
+			case CloudSimTags.RESOURCE_CHARACTERISTICS:
+				processResourceCharacteristics(ev);
+				break;
+			// VM Creation answer
+			case CloudSimTags.VM_CREATE_ACK:
+				processVmCreate(ev);
+				break;
+			// A finished cloudlet returned
+			case CloudSimTags.CLOUDLET_RETURN:
+				processCloudletReturn(ev);
+				submitCloudlets();
+				break;
+			// if the simulation finishes
+			case CloudSimTags.END_OF_SIMULATION:
+				shutdownEntity();
+				break;
+			// other unknown tags are processed by this method
+			default:
+				processOtherEvent(ev);
+				break;
+		}
+	}
+
+	
+	@Override
 	protected void submitCloudlets() {
 		List <Cloudlet> cloudletSubmitList = getCloudletList();
 		
@@ -58,6 +91,9 @@ public class DatacenterBrokerWso extends DatacenterBroker {
 			// if user didn't bind this cloudlet and it has not been executed yet
 			if (cloudlet.getVmId() == -1) {
 				vm = getBestFitVm(cloudlet);
+				if (vm == null) {
+					continue;
+				}
 			} else { // submit to the specific vm
 				vm = VmList.getById(getVmsCreatedList(), cloudlet.getVmId());
 				if (vm == null) { // vm was not created
@@ -81,13 +117,12 @@ public class DatacenterBrokerWso extends DatacenterBroker {
 			getCloudletList().remove(cloudlet);
 		}
 		
-		vmCurrRam.clear();
-		
+		vmCurrCPU.clear();
 	}
 	
 	protected Vm getBestFitVm(Cloudlet cloudlet) {
 		List <Vm> vmList = getVmsCreatedList();
-		ArrayList <Long> ramDiff = new ArrayList<Long>();
+		ArrayList <Integer> cpuDiff = new ArrayList<Integer>();
 		/*
 		 * TUTAJ TRZEBA PODMIENIĆ TO GET CLOUDLET TOTAL NA ODPOWIEDNIĄ RZECZ!
 		 * W ZALEŻNOŚCI OD TEGO JAKA TO BĘDZIE JEDNOSTKA CZY BAJTY CZY MB ZAMIANIC MNOZNIK W 113 LINII
@@ -95,21 +130,31 @@ public class DatacenterBrokerWso extends DatacenterBroker {
 		 * TRZEBA DOPISAC ALGORYTM Power and Computation Capacity Best First Decreasing
 		 * JAKIES ZRODLO O CO W TYM CHODZI???
 		 */
-		long cloudletSize = cloudlet.getCloudletTotalLength();
+		int cloudletNumCPU = cloudlet.getNumberOfPes();
 		
 		for (int i=0; i < vmList.size(); i++) {				
-			long vmRamByte = (vmList.get(i).getCurrentAllocatedRam() * 1000000) - vmCurrRam.get(i);
-			long diff = vmRamByte - cloudletSize;
+			int vmNumCPU = vmList.get(i).getNumberOfPes() - vmCurrCPU.get(i);
+			int diff = vmNumCPU - cloudletNumCPU;
 			
 			if (diff < 0) {
-				diff = cloudletSize * 10000000;
+				diff = 1000;
 			}
-			ramDiff.add(diff);
+			cpuDiff.add(diff);
 		}
-		int indexOfMinimum = ramDiff.indexOf(Collections.min(ramDiff));
-		long newRamValue = vmCurrRam.get(indexOfMinimum) + cloudletSize;
-		vmCurrRam.set(indexOfMinimum, newRamValue);
 		
+		int indexOfMinimum = cpuDiff.indexOf(Collections.min(cpuDiff));
+		int newCPUValue = vmCurrCPU.get(indexOfMinimum) + cloudletNumCPU;
+		
+		// if there is no VM with enough number of CPU
+		int numVM = 0;
+		for (int element : cpuDiff) {
+		  if (element == 1000) numVM++;
+		}
+		
+		if (numVM == cpuDiff.size()){
+			return null;
+		}
+		vmCurrCPU.set(indexOfMinimum, newCPUValue);
 		return vmList.get(indexOfMinimum);
 	}
 	
@@ -126,10 +171,10 @@ public class DatacenterBrokerWso extends DatacenterBroker {
 	}
 	
 	private void setVmCurrAllocationList() {
-		this.vmCurrRam = new ArrayList<Long>();
-		long zero = 0;
+		this.vmCurrCPU = new ArrayList<Integer>();
+		Log.printLine(getVmsCreatedList().size());
 		for (int i=0; i< getVmsCreatedList().size(); i++) {
-			vmCurrRam.add(zero);
+			vmCurrCPU.add(0);
 		}
 	}
 
