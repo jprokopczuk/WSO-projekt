@@ -44,7 +44,7 @@ public class WsoExperiment {
 			// before creating any entities.
 			int num_user = 1; // number of cloud users
 			Calendar calendar = Calendar.getInstance();
-			boolean trace_flag = false; // mean trace events
+			boolean trace_flag = true; // mean trace events
 
 			// Initialize the CloudSim library
 			CloudSim.init(num_user, calendar, trace_flag);
@@ -62,7 +62,12 @@ public class WsoExperiment {
 			int vmsNumber = 5;
 			
 			vmlist = new ArrayList<Vm>();
-			vmlist = WsoExperiment.createVM(brokerId, vmsNumber, 5, 10, 256, 100, 100);
+			int maxMips = 10;
+			long maxSize = 10000; // image size (MB)
+			int maxRam = 256; // vm memory (MB)
+			long maxBw = 1000;
+			int maxPesNumber = 10;
+			vmlist = WsoExperiment.createVM(brokerId, vmsNumber, maxMips, maxSize, maxRam, maxBw, maxPesNumber);
 
 			// submit vm list to the broker
 			broker.submitVmList(vmlist);
@@ -74,7 +79,11 @@ public class WsoExperiment {
 			
 			int cloudletsNumber = 100;
 			cloudletList = new ArrayList<Cloudlet>();
-			cloudletList = WsoExperiment.createCloudlet(brokerId, cloudletsNumber, 10000, 10, 100000, 1000, utilizationModel);
+			long maxLength = 1000000000;
+	        long maxFileSize = 300000000;
+	        long maxOutputSize = 300000000;
+	        maxPesNumber = 1;
+			cloudletList = WsoExperiment.createCloudlet(brokerId, cloudletsNumber, maxLength, maxFileSize, maxOutputSize, maxPesNumber, utilizationModel);
 
 			// submit cloudlet list to the broker
 			broker.submitCloudletList(cloudletList);
@@ -83,22 +92,12 @@ public class WsoExperiment {
 			CloudSim.startSimulation();
 			
 			printVmList(vmlist, CloudSim.clock());
-			
-			CloudSim.stopSimulation();
 
-			
-			/*
-			 * TUTAJ TRZEBA PODMIENIĆ ŻEBY NAM PRINTOWAŁO TO CO CHCEMY!
-			 * CAŁKOWITY CZAS
-			 * WYDAJNOŚĆ
-			 * ZUŻYCIE ENERGII
-			 */
+
+			CloudSim.stopSimulation();
 
 			//Final step: Print results when simulation is over
 			List<Cloudlet> newList = broker.getCloudletReceivedList();
-			
-//			double utilization = utilizationModel.getUtilization(CloudSim.clock());
-//			Log.printLine(utilization);
 			printCloudletList(newList);
 			
 			printExperimentSummary(newList);
@@ -200,7 +199,7 @@ public class WsoExperiment {
 			 * PCBFD for  Power and Computation Capacity Best First Decreasing
 			 * if any other string - Best Fit as default
 			*/
-			broker = new DatacenterBrokerWso("Broker", "BFD");
+			broker = new DatacenterBrokerWso("Broker", "BF");
 		} catch (Exception e) {
 			e.printStackTrace();
 			return null;
@@ -402,7 +401,7 @@ public class WsoExperiment {
         return list;
     }
     
-    public static List<Cloudlet> createCloudlet(int userId, int cloudlets, int maxLength, long maxFileSize, long maxOutputSize, int maxPesNumber, UtilizationModel utilizationModel ) {
+    public static List<Cloudlet> createCloudlet(int userId, int cloudlets, long maxLength, long maxFileSize, long maxOutputSize, int maxPesNumber, UtilizationModel utilizationModel ) {
         // Creates a container to store Cloudlets
         LinkedList<Cloudlet> list = new LinkedList<Cloudlet>();
 
