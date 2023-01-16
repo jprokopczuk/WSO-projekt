@@ -19,6 +19,11 @@ import org.cloudbus.cloudsim.Vm;
 import org.cloudbus.cloudsim.VmAllocationPolicySimple;
 import org.cloudbus.cloudsim.VmSchedulerTimeShared;
 import org.cloudbus.cloudsim.core.CloudSim;
+import org.cloudbus.cloudsim.power.PowerDatacenter;
+import org.cloudbus.cloudsim.power.PowerHost;
+import org.cloudbus.cloudsim.power.PowerVm;
+import org.cloudbus.cloudsim.power.models.PowerModel;
+import org.cloudbus.cloudsim.power.models.PowerModelCubic;
 import org.cloudbus.cloudsim.provisioners.BwProvisionerSimple;
 import org.cloudbus.cloudsim.provisioners.PeProvisionerSimple;
 import org.cloudbus.cloudsim.provisioners.RamProvisionerSimple;
@@ -29,14 +34,16 @@ public class WsoExperiment {
 	private static List<Cloudlet> cloudletList;
 
 	/** The vmlist. */
-	private static List<Vm> vmlist;
+	private static List<PowerVm> vmlist;
+	
+//	private static PowerModelCubic powerModel = new PowerModelCubic();
 	
 	public static long seed;
 	
 	@SuppressWarnings("unused")
 	public static void main(String[] args) {
 
-		WsoExperiment.seed = 100;
+		WsoExperiment.seed = 1000;
 		Log.printLine("Starting WSO Experiment...");
 
 		try {
@@ -44,7 +51,7 @@ public class WsoExperiment {
 			// before creating any entities.
 			int num_user = 1; // number of cloud users
 			Calendar calendar = Calendar.getInstance();
-			boolean trace_flag = false; // mean trace events
+			boolean trace_flag = true; // mean trace events
 
 			// Initialize the CloudSim library
 			CloudSim.init(num_user, calendar, trace_flag);
@@ -52,7 +59,7 @@ public class WsoExperiment {
 			// Second step: Create Datacenters
 			// Datacenters are the resource providers in CloudSim. We need at
 			// list one of them to run a CloudSim simulation
-			Datacenter datacenter0 = createDatacenter("Datacenter_0");
+			PowerDatacenter datacenter0 = createDatacenter("Datacenter_0");
 
 			// Third step: Create Broker
 			DatacenterBrokerWso broker = createBroker();
@@ -61,44 +68,41 @@ public class WsoExperiment {
 			// Fourth step: Create virtual machines
 			int vmsNumber = 5;
 			
-			vmlist = new ArrayList<Vm>();
-			vmlist = WsoExperiment.createVM(brokerId, vmsNumber, 5, 10, 256, 100, 100);
+			vmlist = new ArrayList<PowerVm>();
+			int maxMips = 10;
+			long maxSize = 10000; // image size (MB)
+			int maxRam = 256; // vm memory (MB)
+			long maxBw = 1000;
+			int maxPesNumber = 10;
+			vmlist = WsoExperiment.createVM(brokerId, vmsNumber, maxMips, maxSize, maxRam, maxBw, maxPesNumber);
 
 			// submit vm list to the broker
 			broker.submitVmList(vmlist);
 
 			// Fifth step: Create Cloudlets
-			UtilizationModel utilizationModel = new UtilizationModelStochastic(100);
-//	        UtilizationModel utilizationModel = new UtilizationModelFull();
+//			UtilizationModel utilizationModel = new UtilizationModelStochastic(100);
+	        UtilizationModel utilizationModel = new UtilizationModelFull();
 			
 			
-			int cloudletsNumber = 100;
+			int cloudletsNumber = 10;
 			cloudletList = new ArrayList<Cloudlet>();
-			cloudletList = WsoExperiment.createCloudlet(brokerId, cloudletsNumber, 10000, 10, 100000, 1000, utilizationModel);
+			long maxLength = 100000;
+	        long maxFileSize = 300;
+	        long maxOutputSize = 300;
+	        maxPesNumber = 1;
+			cloudletList = WsoExperiment.createCloudlet(brokerId, cloudletsNumber, maxLength, maxFileSize, maxOutputSize, maxPesNumber, utilizationModel);
 
 			// submit cloudlet list to the broker
 			broker.submitCloudletList(cloudletList);
 
 			// Sixth step: Starts the simulation
 			CloudSim.startSimulation();
-			
-			printVmList(vmlist, CloudSim.clock());
-			
-			CloudSim.stopSimulation();
 
-			
-			/*
-			 * TUTAJ TRZEBA PODMIENIĆ ŻEBY NAM PRINTOWAŁO TO CO CHCEMY!
-			 * CAŁKOWITY CZAS
-			 * WYDAJNOŚĆ
-			 * ZUŻYCIE ENERGII
-			 */
+
+			CloudSim.stopSimulation();
 
 			//Final step: Print results when simulation is over
 			List<Cloudlet> newList = broker.getCloudletReceivedList();
-			
-//			double utilization = utilizationModel.getUtilization(CloudSim.clock());
-//			Log.printLine(utilization);
 			printCloudletList(newList);
 			
 			printExperimentSummary(newList);
@@ -118,12 +122,12 @@ public class WsoExperiment {
 	 *
 	 * @return the datacenter
 	 */
-	private static Datacenter createDatacenter(String name) {
+	private static PowerDatacenter createDatacenter(String name) {
 
 		// Here are the steps needed to create a PowerDatacenter:
 		// 1. We need to create a list to store
 		// our machine
-		List<Host> hostList = new ArrayList<Host>();
+		List<PowerHost> hostList = new ArrayList<PowerHost>();
 
 		// 2. A Machine contains one or more PEs or CPUs/Cores.
 		// In this example, it will have only one core.
@@ -140,17 +144,31 @@ public class WsoExperiment {
 		int ram = 2048; // host memory (MB)
 		long storage = 1000000; // host storage
 		int bw = 10000;
+		
 
 		hostList.add(
-			new Host(
+			new PowerHost(
 				hostId,
 				new RamProvisionerSimple(ram),
 				new BwProvisionerSimple(bw),
 				storage,
 				peList,
-				new VmSchedulerTimeShared(peList)
+				new VmSchedulerTimeShared(peList),
+				new PowerModelCubic(9000.0, 90.0)
 			)
 		); // This is our machine
+		
+		hostList.add(
+				new PowerHost(
+					hostId + 1,
+					new RamProvisionerSimple(ram),
+					new BwProvisionerSimple(bw),
+					storage,
+					peList,
+					new VmSchedulerTimeShared(peList),
+					new PowerModelCubic(9000.0, 80.0)
+				)
+			);
 
 		// 5. Create a DatacenterCharacteristics object that stores the
 		// properties of a data center: architecture, OS, list of
@@ -162,7 +180,7 @@ public class WsoExperiment {
 		double time_zone = 10.0; // time zone this resource located
 		double cost = 3.0; // the cost of using processing in this resource
 		double costPerMem = 0.05; // the cost of using memory in this resource
-		double costPerStorage = 0.001; // the cost of using storage in this
+		double costPerStorage = 0.0001; // the cost of using storage in this
 										// resource
 		double costPerBw = 0.0; // the cost of using bw in this resource
 		LinkedList<Storage> storageList = new LinkedList<Storage>(); // we are not adding SAN
@@ -173,9 +191,9 @@ public class WsoExperiment {
 				costPerStorage, costPerBw);
 
 		// 6. Finally, we need to create a PowerDatacenter object.
-		Datacenter datacenter = null;
+		PowerDatacenter datacenter = null;
 		try {
-			datacenter = new Datacenter(name, characteristics, new VmAllocationPolicySimple(hostList), storageList, 0);
+			datacenter = new PowerDatacenter(name, characteristics, new VmAllocationPolicySimple(hostList), storageList, 0);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -197,7 +215,7 @@ public class WsoExperiment {
 			/* Add name of allocation algorithm
 			 * BF for Best Fit
 			 * BFD for Best Fit Decresing
-			 * PCBFD for  Power and Computation Capacity Best First Decreasing
+			 * EPOBF for  Energy-aware and Performance per watt Oriented Best Fit
 			 * if any other string - Best Fit as default
 			*/
 			broker = new DatacenterBrokerWso("Broker", "BFD");
@@ -245,26 +263,6 @@ public class WsoExperiment {
 		}
 	}
 	
-	private static void printVmList(List<Vm> list, double time) {
-		int size = list.size();
-		Vm vm;
-
-		String indent = "    ";
-		Log.printLine();
-		Log.printLine("========== OUTPUT ==========");
-		Log.printLine("Id" + indent + "Vm ID" + indent + "Total CPU Utilization" + indent +
-					"Total Utilization Of Cpu Mips");
-
-		DecimalFormat dft = new DecimalFormat("###.##");
-		for (int i = 0; i < size; i++) {
-			vm = list.get(i);
-			Log.print((i+1) + indent +  vm.getId() + indent + indent);
-			Log.printLine(
-					indent +  vm.getTotalUtilizationOfCpu(time)
-					+ indent + indent + indent + indent + indent + indent + indent
-					+ dft.format(vm.getTotalUtilizationOfCpuMips(time)));
-		}
-	}
 	
 	private static void printExperimentSummary(List<Cloudlet> list) {
 		double timeArray[];
@@ -349,9 +347,9 @@ public class WsoExperiment {
         return list;
     }
   
-  public static List<Vm> createVM(int brokerId, int vms, int maxMips, long maxSize, int maxRam, long maxBw, int maxPesNumber) {
+  public static List<PowerVm> createVM(int brokerId, int vms, int maxMips, long maxSize, int maxRam, long maxBw, int maxPesNumber) {
         //Creates list of VM
-        List<Vm> list = new ArrayList<Vm>();
+        List<PowerVm> list = new ArrayList<PowerVm>();
 
         //VM Parameters
 		int minMips = 1;
@@ -370,7 +368,7 @@ public class WsoExperiment {
         	long bw = getRandomNumber(minBw, maxBw);
         	int pesNumber = getRandomNumber(minPesNumber, maxPesNumber);
         	
-        	Vm vm = new Vm(vmid, brokerId, mips, pesNumber, ram, bw, size, vmm, new CloudletSchedulerTimeShared());
+        	PowerVm vm = new PowerVm(vmid, brokerId, mips, pesNumber, ram, bw, size,  1, vmm, new CloudletSchedulerTimeShared(), 0.01);
             list.add(vm);
         }
 
@@ -402,7 +400,7 @@ public class WsoExperiment {
         return list;
     }
     
-    public static List<Cloudlet> createCloudlet(int userId, int cloudlets, int maxLength, long maxFileSize, long maxOutputSize, int maxPesNumber, UtilizationModel utilizationModel ) {
+    public static List<Cloudlet> createCloudlet(int userId, int cloudlets, long maxLength, long maxFileSize, long maxOutputSize, int maxPesNumber, UtilizationModel utilizationModel ) {
         // Creates a container to store Cloudlets
         LinkedList<Cloudlet> list = new LinkedList<Cloudlet>();
 
@@ -430,13 +428,13 @@ public class WsoExperiment {
     }
     
     private static int getRandomNumber(int min, int max) {
-    	WsoExperiment.seed = WsoExperiment.seed + 1;
+    	WsoExperiment.seed = WsoExperiment.seed + 100;
     	Random generator = new Random(seed);
         return (int) ((generator.nextDouble() * (max - min)) + min);
     }
     
     private static long getRandomNumber(long min, long max) {
-    	WsoExperiment.seed = WsoExperiment.seed + 1;
+    	WsoExperiment.seed = WsoExperiment.seed + 100;
     	Random generator = new Random(seed);
         return (long) ((generator.nextDouble() * (max - min)) + min);
     }
