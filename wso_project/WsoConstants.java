@@ -1,4 +1,4 @@
-package wso_project_wersjaRAM;
+package wso_project;
 
 import org.cloudbus.cloudsim.power.models.PowerModel;
 import org.cloudbus.cloudsim.power.models.PowerModelSpecPowerHpProLiantMl110G4Xeon3040;
@@ -9,7 +9,7 @@ public class WsoConstants {
 
 	public final static int NUMBER_OF_HOSTS = 5;
 	
-	public final static int NUMBER_OF_CLOUDLETS = 50;
+	public final static int NUMBER_OF_CLOUDLETS = 10;
 	
 	public final static long CLOUDLET_UTILIZATION_SEED = 100;
 	public final static int CLOUDLET_SEED = 100;
