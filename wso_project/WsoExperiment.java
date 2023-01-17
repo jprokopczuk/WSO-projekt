@@ -1,4 +1,4 @@
-package wso_project_wersjaRAM;
+package wso_project;
 
 import java.io.IOException;
 import java.util.Calendar;

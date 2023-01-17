@@ -1,4 +1,4 @@
-package wso_project_wersjaRAM;
+package wso_project;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -124,7 +124,7 @@ public class DatacenterBrokerWso extends DatacenterBroker {
 	protected Vm getBestFitVm(Cloudlet cloudlet) {
 		List <Vm> vmList = getVmsCreatedList();
 		ArrayList <Long> ramDiff = new ArrayList<Long>();
-
+		int hugeNumber = 999999999;
 		long cloudletNumRAM = cloudlet.getCloudletTotalLength();
 		
 		for (int i=0; i < vmList.size(); i++) {				
@@ -132,7 +132,7 @@ public class DatacenterBrokerWso extends DatacenterBroker {
 			long diff = vmNumRam - cloudletNumRAM;
 			
 			if (diff < 0) {
-				diff = 1000000;
+				diff = hugeNumber;
 			}
 			ramDiff.add(diff);
 		}
@@ -140,7 +140,7 @@ public class DatacenterBrokerWso extends DatacenterBroker {
 		// if there is no VM with enough memory
 		int numVM = 0;
 		for (long element : ramDiff) {
-		  if (element == 1000000) numVM++;
+		  if (element == hugeNumber) numVM++;
 		}
 		
 		if (numVM == ramDiff.size()){

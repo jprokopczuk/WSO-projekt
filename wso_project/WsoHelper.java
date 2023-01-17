@@ -1,4 +1,4 @@
-package wso_project_wersjaRAM;
+package wso_project;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,12 +16,14 @@ import org.cloudbus.cloudsim.power.PowerDatacenterBroker;
 import wso_project.WsoExperiment;
 
 public class WsoHelper {
+	public static int seed = WsoConstants.CLOUDLET_SEED;
 	/**
 	 * Creates the broker.
 	 * 
 	 * @return the datacenter broker
 	 */
 	public static DatacenterBroker createBroker(String allocationAlgorithm) {
+		
 		DatacenterBroker broker = null;
 		try {		
 			if (allocationAlgorithm == null) {
@@ -92,13 +94,13 @@ public class WsoHelper {
 	}
 	
 	private static int getRandomNumber(int min, int max) {
-    	int seed = WsoConstants.CLOUDLET_SEED + 100;
+    	seed = seed + 100;
     	Random generator = new Random(seed);
         return (int) ((generator.nextDouble() * (max - min)) + min);
     }
     
     private static long getRandomNumber(long min, long max) {
-    	int seed = WsoConstants.CLOUDLET_SEED + 100;
+    	seed = seed + 100;
     	Random generator = new Random(seed);
         return (long) ((generator.nextDouble() * (max - min)) + min);
     }
