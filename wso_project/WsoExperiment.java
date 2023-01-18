@@ -3,6 +3,7 @@ package wso_project;
 import java.io.IOException;
 import java.util.Calendar;
 import java.util.List;
+import java.util.ArrayList;
 
 import org.cloudbus.cloudsim.Cloudlet;
 import org.cloudbus.cloudsim.DatacenterBroker;
@@ -17,7 +18,9 @@ import org.cloudbus.cloudsim.power.PowerVmAllocationPolicySimple;
 
 public class WsoExperiment {
 
-
+	static List<Double> time = new ArrayList<Double>();
+	static List<Double> energy = new ArrayList<Double>();
+	
 	/**
 	 * Creates main() to run this example.
 	 * 
@@ -29,6 +32,10 @@ public class WsoExperiment {
 
 		Log.setDisabled(!Constants.ENABLE_OUTPUT);
 		Log.printLine("Starting " + experimentName);
+		
+		int[] cloudletsNumber= {10, 50, 100, 200};
+		int[] hostsNumber = {10, 10, 10, 10};
+		int[] vmsPerHostNumber = {10, 10, 10, 10, 10};
 
 		try {
 			/*
@@ -39,9 +46,11 @@ public class WsoExperiment {
 			 * PCA-BFD if Power and Computation Capacity Best First Decreasing
 			*/
 			String allocationAlgorithm = "PCA-BFD";
-			makeExperimentWithParameters(WsoConstants.NUMBER_OF_CLOUDLETS, WsoConstants.NUMBER_OF_VMS, 
-					WsoConstants.NUMBER_OF_HOSTS, allocationAlgorithm);
-			
+			for(int i = 0; i < cloudletsNumber.length; i++) {
+				makeExperimentWithParameters(cloudletsNumber[i], vmsPerHostNumber[i], 
+						hostsNumber[i], allocationAlgorithm);
+			}
+			printSummary();
 
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -85,13 +94,24 @@ public class WsoExperiment {
 		Log.printLine("Received " + newList.size() + " cloudlets");
 
 		CloudSim.stopSimulation();
-
-		Helper.printResults(
-				datacenter,
-				vmList,
-				lastClock,
-				experimentName,
-				WsoConstants.OUTPUT_CSV,
-				outputFolder);
+		
+		time.add(lastClock);
+		energy.add(datacenter.getPower() / (3600 * 1000));
+		
+//		Helper.printResults(
+//				datacenter,
+//				vmList,
+//				lastClock,
+//				experimentName,
+//				WsoConstants.OUTPUT_CSV,
+//				outputFolder);
+	}
+	
+	
+	public static void printSummary() {
+		Log.printLine("-------- SUMMARY --------");
+		for(int i=0; i< time.size(); i++) {
+			Log.printLine("Energy: " + energy.get(i) + ", Time: " + time.get(i));
+		}
 	}
 }
