@@ -49,6 +49,7 @@ public class WsoHelper {
 	 * @return the list< cloudlet>
 	 */
 	public static List<Cloudlet> createCloudletList(int brokerId, int cloudletsNumber, String allocationAlgorithm) {
+		setSeed(WsoConstants.CLOUDLET_SEED);
 		List<Cloudlet> list = new ArrayList<Cloudlet>();
 		long seed = WsoConstants.CLOUDLET_UTILIZATION_SEED;
 		UtilizationModel utilizationModelNull = new UtilizationModelNull();
@@ -91,6 +92,11 @@ public class WsoHelper {
 		}
 		
 		return list;
+	}
+	
+	private static void setSeed(int cloudletSeed) {
+		seed = cloudletSeed;
+		
 	}
 	
 	private static int getRandomNumber(int min, int max) {

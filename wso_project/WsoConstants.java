@@ -21,7 +21,7 @@ public class WsoConstants {
 	public final static double SIMULATION_LIMIT = 24 * 60 * 60;
 
 	public final static long CLOUDLET_MIN_LENGTH	= 1000;
-	public final static long CLOUDLET_MAX_LENGTH	= 2500 * (int) SIMULATION_LIMIT;
+	public final static long CLOUDLET_MAX_LENGTH	= 1500 * (int) SIMULATION_LIMIT;
 	
 	public final static int CLOUDLET_MIN_PES	= 1;
 	public final static int CLOUDLET_MAX_PES	= 10;

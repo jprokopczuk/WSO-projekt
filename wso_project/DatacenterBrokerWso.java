@@ -6,6 +6,9 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.cloudbus.cloudsim.Cloudlet;
@@ -51,8 +54,8 @@ public class DatacenterBrokerWso extends DatacenterBroker {
 		Cloudlet cloudlet = (Cloudlet) ev.getData();
 		getCloudletReceivedList().add(cloudlet);
 		
-		long newRAM= vmCurrRAM.get(cloudlet.getVmId()) - cloudlet.getCloudletTotalLength();
-		vmCurrRAM.set(cloudlet.getVmId(), newRAM);
+//		long newRAM= vmCurrRAM.get(cloudlet.getVmId()) - cloudlet.getCloudletTotalLength();
+//		vmCurrRAM.set(cloudlet.getVmId(), newRAM);
 		
 		Log.printLine(CloudSim.clock() + ": " + getName() + ": Cloudlet " + cloudlet.getCloudletId()
 				+ " received");
@@ -86,17 +89,22 @@ public class DatacenterBrokerWso extends DatacenterBroker {
 			Vm vm;
 			// if user didn't bind this cloudlet and it has not been executed yet
 			if (cloudlet.getVmId() == -1) {
-				
 				if (allocationAlgorithm == "PCA-BFD") {
 					vm = getPCABestFitVm(cloudlet);
 				}
 				else {
 					vm = getBestFitVm(cloudlet);
 				}
-				
-				if (vm == null) {
-					continue;
+				if(vm == null) {
+					setVmCurrAllocationList();
+					if (allocationAlgorithm == "PCA-BFD") {
+						vm = getPCABestFitVm(cloudlet);
+					}
+					else {
+						vm = getBestFitVm(cloudlet);
+					}
 				}
+					
 			} else { // submit to the specific vm
 				vm = VmList.getById(getVmsCreatedList(), cloudlet.getVmId());
 				if (vm == null) { // vm was not created
@@ -118,7 +126,6 @@ public class DatacenterBrokerWso extends DatacenterBroker {
 		for (Cloudlet cloudlet : getCloudletSubmittedList()) {
 			getCloudletList().remove(cloudlet);
 		}
-		
 	}
 	
 	protected Vm getBestFitVm(Cloudlet cloudlet) {
