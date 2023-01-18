@@ -33,9 +33,9 @@ public class WsoExperiment {
 		Log.setDisabled(!Constants.ENABLE_OUTPUT);
 		Log.printLine("Starting " + experimentName);
 		
-		int[] cloudletsNumber= {10, 50, 100, 200};
-		int[] hostsNumber = {10, 10, 10, 10};
-		int[] vmsPerHostNumber = {10, 10, 10, 10, 10};
+		int[] cloudletsNumber= {10, 22, 30, 40, 30};
+		int[] hostsNumber = {10, 10, 10, 10, 10};
+		int[] vmsPerHostNumber = {10, 10, 10, 10, 10, 10};
 
 		try {
 			/*
