@@ -26,14 +26,11 @@ public class WsoExperiment {
 	 */
 	public static void main(String[] args) throws IOException {
 		String experimentName = "wso_experiment";
-		String outputFolder = "output";
 
 		Log.setDisabled(!Constants.ENABLE_OUTPUT);
 		Log.printLine("Starting " + experimentName);
 
 		try {
-			CloudSim.init(1, Calendar.getInstance(), false);
-
 			/*
 			 * Choose allocation algorithm
 			 * null if none
@@ -42,43 +39,9 @@ public class WsoExperiment {
 			 * PCA-BFD if Power and Computation Capacity Best First Decreasing
 			*/
 			String allocationAlgorithm = "PCA-BFD";
-			DatacenterBroker broker = WsoHelper.createBroker(allocationAlgorithm);
-			int brokerId = broker.getId();
-
-			List<Cloudlet> cloudletList = WsoHelper.createCloudletList(
-					brokerId,
-					WsoConstants.NUMBER_OF_CLOUDLETS,
-					allocationAlgorithm);
-			List<Vm> vmList = Helper.createVmList(brokerId, WsoConstants.NUMBER_OF_VMS);
-			List<PowerHost> hostList = Helper.createHostList(WsoConstants.NUMBER_OF_HOSTS);
-
-			PowerDatacenterNonPowerAware datacenter = (PowerDatacenterNonPowerAware) Helper.createDatacenter(
-					"Datacenter",
-					PowerDatacenterNonPowerAware.class,
-					hostList,
-					new PowerVmAllocationPolicySimple(hostList));
-
-			datacenter.setDisableMigrations(true);
-
-			broker.submitVmList(vmList);
-			broker.submitCloudletList(cloudletList);
-
-			double lastClock = CloudSim.startSimulation();
-
-			List<Cloudlet> newList = broker.getCloudletReceivedList();
-			Log.printLine("Received " + newList.size() + " cloudlets");
-
-			CloudSim.stopSimulation();
+			makeExperimentWithParameters(WsoConstants.NUMBER_OF_CLOUDLETS, WsoConstants.NUMBER_OF_VMS, 
+					WsoConstants.NUMBER_OF_HOSTS, allocationAlgorithm);
 			
-//			Helper.printCloudletList(cloudletList);
-
-			Helper.printResults(
-					datacenter,
-					vmList,
-					lastClock,
-					experimentName,
-					WsoConstants.OUTPUT_CSV,
-					outputFolder);
 
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -87,5 +50,48 @@ public class WsoExperiment {
 		}
 
 		Log.printLine("Finished " + experimentName);
+	}
+	
+	public static void makeExperimentWithParameters(int numberOfCloudLets, int numberOfVMs, 
+			int numebrOfHosts, String allocationAlgorithm) throws Exception {
+		CloudSim.init(1, Calendar.getInstance(), false);
+		String experimentName = "wso_experiment";
+		String outputFolder = "output";
+
+		DatacenterBroker broker = WsoHelper.createBroker(allocationAlgorithm);
+		int brokerId = broker.getId();
+
+		List<Cloudlet> cloudletList = WsoHelper.createCloudletList(
+				brokerId,
+				numberOfCloudLets,
+				allocationAlgorithm);
+		List<Vm> vmList = Helper.createVmList(brokerId, numberOfVMs);
+		List<PowerHost> hostList = Helper.createHostList(numebrOfHosts);
+
+		PowerDatacenterNonPowerAware datacenter = (PowerDatacenterNonPowerAware) Helper.createDatacenter(
+				"Datacenter",
+				PowerDatacenterNonPowerAware.class,
+				hostList,
+				new PowerVmAllocationPolicySimple(hostList));
+
+		datacenter.setDisableMigrations(true);
+
+		broker.submitVmList(vmList);
+		broker.submitCloudletList(cloudletList);
+
+		double lastClock = CloudSim.startSimulation();
+
+		List<Cloudlet> newList = broker.getCloudletReceivedList();
+		Log.printLine("Received " + newList.size() + " cloudlets");
+
+		CloudSim.stopSimulation();
+
+		Helper.printResults(
+				datacenter,
+				vmList,
+				lastClock,
+				experimentName,
+				WsoConstants.OUTPUT_CSV,
+				outputFolder);
 	}
 }

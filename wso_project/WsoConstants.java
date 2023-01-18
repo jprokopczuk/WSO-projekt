@@ -5,11 +5,11 @@ import org.cloudbus.cloudsim.power.models.PowerModelSpecPowerHpProLiantMl110G4Xe
 import org.cloudbus.cloudsim.power.models.PowerModelSpecPowerHpProLiantMl110G5Xeon3075;
 
 public class WsoConstants {
-	public final static int NUMBER_OF_VMS = 5;
+	public final static int NUMBER_OF_VMS = 10;
 
-	public final static int NUMBER_OF_HOSTS = 5;
+	public final static int NUMBER_OF_HOSTS = 10;
 	
-	public final static int NUMBER_OF_CLOUDLETS = 10;
+	public final static int NUMBER_OF_CLOUDLETS = 1;
 	
 	public final static long CLOUDLET_UTILIZATION_SEED = 100;
 	public final static int CLOUDLET_SEED = 100;
@@ -20,17 +20,17 @@ public class WsoConstants {
 	public final static double SCHEDULING_INTERVAL = 300;
 	public final static double SIMULATION_LIMIT = 24 * 60 * 60;
 
-	public final static long CLOUDLET_MIN_LENGTH	= 1000;
-	public final static long CLOUDLET_MAX_LENGTH	= 1500 * (int) SIMULATION_LIMIT;
+	public final static long CLOUDLET_MIN_LENGTH	= 10;
+	public final static long CLOUDLET_MAX_LENGTH	= 15 * (int) SIMULATION_LIMIT;
 	
 	public final static int CLOUDLET_MIN_PES	= 1;
 	public final static int CLOUDLET_MAX_PES	= 10;
 	
-	public final static long CLOUDLET_MIN_FILESIZE	= 10;
-	public final static long CLOUDLET_MAX_FILESIZE	= 1000;
+	public final static long CLOUDLET_MIN_FILESIZE	= 1;
+	public final static long CLOUDLET_MAX_FILESIZE	= 100;
 	
-	public final static long CLOUDLET_MIN_OUTPUT_SIZE	= 10;
-	public final static long CLOUDLET_MAX_OUTPUT_SIZE	= 1000;
+	public final static long CLOUDLET_MIN_OUTPUT_SIZE	= 1;
+	public final static long CLOUDLET_MAX_OUTPUT_SIZE	= 100;
 
 	/*
 	 * VM instance types:
