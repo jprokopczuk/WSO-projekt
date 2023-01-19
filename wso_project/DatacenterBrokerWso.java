@@ -163,7 +163,7 @@ public class DatacenterBrokerWso extends DatacenterBroker {
 	protected Vm getPCABestFitVm(Cloudlet cloudlet) {
 		List <Vm> vmList = getVmsCreatedList();
 		ArrayList <Double> ramRatioDiff = new ArrayList<Double>();
-
+		int hugeNumber = 999999999;
 		long cloudletNumRAM = cloudlet.getCloudletTotalLength();
 		
 		for (int i=0; i < vmList.size(); i++) {				
@@ -173,7 +173,7 @@ public class DatacenterBrokerWso extends DatacenterBroker {
 			double ratio = host.getMaxPower() / vmNumRam;
 			
 			if (vmNumRam == 0) {
-				ratio = 10000;
+				ratio = hugeNumber;
 			}
 			
 			ramRatioDiff.add(ratio);
@@ -182,7 +182,7 @@ public class DatacenterBrokerWso extends DatacenterBroker {
 		// if there is no VM with enough memory
 		int numVM = 0;
 		for (double element : ramRatioDiff) {
-		  if (element == 10000) numVM++;
+		  if (element == hugeNumber) numVM++;
 		}
 		
 		if (numVM == ramRatioDiff.size()){

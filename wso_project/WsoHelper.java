@@ -1,19 +1,31 @@
 package wso_project;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
 import org.cloudbus.cloudsim.Cloudlet;
+import org.cloudbus.cloudsim.CloudletSchedulerDynamicWorkload;
+import org.cloudbus.cloudsim.Datacenter;
 import org.cloudbus.cloudsim.DatacenterBroker;
+import org.cloudbus.cloudsim.DatacenterCharacteristics;
+import org.cloudbus.cloudsim.Pe;
+import org.cloudbus.cloudsim.Storage;
 import org.cloudbus.cloudsim.UtilizationModel;
 import org.cloudbus.cloudsim.UtilizationModelNull;
 import org.cloudbus.cloudsim.UtilizationModelStochastic;
-import org.cloudbus.cloudsim.examples.power.Constants;
-import org.cloudbus.cloudsim.examples.power.random.RandomConstants;
+import org.cloudbus.cloudsim.Vm;
+import org.cloudbus.cloudsim.VmAllocationPolicy;
+import org.cloudbus.cloudsim.VmSchedulerTimeSharedOverSubscription;
 import org.cloudbus.cloudsim.power.PowerDatacenterBroker;
+import org.cloudbus.cloudsim.power.PowerHost;
+import org.cloudbus.cloudsim.power.PowerHostUtilizationHistory;
+import org.cloudbus.cloudsim.power.PowerVm;
+import org.cloudbus.cloudsim.provisioners.BwProvisionerSimple;
+import org.cloudbus.cloudsim.provisioners.PeProvisionerSimple;
+import org.cloudbus.cloudsim.provisioners.RamProvisionerSimple;
 
-import wso_project.WsoExperiment;
 
 public class WsoHelper {
 	public static int seed = WsoConstants.CLOUDLET_SEED;
@@ -92,6 +104,115 @@ public class WsoHelper {
 		}
 		
 		return list;
+	}
+	
+	public static List<Vm> createVmList(int brokerId, int vmsNumber) {
+		List<Vm> vms = new ArrayList<Vm>();
+		for (int i = 0; i < vmsNumber; i++) {
+			int vmType = i / (int) Math.ceil((double) vmsNumber / WsoConstants.VM_TYPES);
+			vms.add(new PowerVm(
+					i,
+					brokerId,
+					WsoConstants.VM_MIPS[vmType],
+					WsoConstants.VM_PES[vmType],
+					WsoConstants.VM_RAM[vmType],
+					WsoConstants.VM_BW,
+					WsoConstants.VM_SIZE,
+					1,
+					"Xen",
+					//CloudletSchedulerDynamicWorkload(WsoConstants.VM_MIPS[vmType], WsoConstants.VM_PES[vmType]),
+					new CloudletSchedulerDynamicWorkload(WsoConstants.VM_MIPS[vmType], WsoConstants.VM_PES[vmType]),
+					WsoConstants.SCHEDULING_INTERVAL));
+		}
+		return vms;
+	}
+	
+	/**
+	 * Creates the host list.
+	 * 
+	 * @param hostsNumber the hosts number
+	 * 
+	 * @return the list< power host>
+	 */
+	public static List<PowerHost> createHostList(int hostsNumber) {
+		List<PowerHost> hostList = new ArrayList<PowerHost>();
+		for (int i = 0; i < hostsNumber; i++) {
+			int hostType = i % WsoConstants.HOST_TYPES;
+
+			List<Pe> peList = new ArrayList<Pe>();
+			for (int j = 0; j < WsoConstants.HOST_PES[hostType]; j++) {
+				peList.add(new Pe(j, new PeProvisionerSimple(WsoConstants.HOST_MIPS[hostType])));
+			}
+
+			hostList.add(new PowerHostUtilizationHistory(
+					i,
+					new RamProvisionerSimple(WsoConstants.HOST_RAM[hostType]),
+					new BwProvisionerSimple(WsoConstants.HOST_BW),
+					WsoConstants.HOST_STORAGE,
+					peList,
+					new VmSchedulerTimeSharedOverSubscription(peList),
+					WsoConstants.HOST_POWER[hostType]));
+		}
+		return hostList;
+	}
+	
+	/**
+	 * Creates the datacenter.
+	 * 
+	 * @param name the name
+	 * @param datacenterClass the datacenter class
+	 * @param hostList the host list
+	 * @param vmAllocationPolicy the vm allocation policy
+	 * @param simulationLength
+	 * 
+	 * @return the power datacenter
+	 * 
+	 * @throws Exception the exception
+	 */
+	public static Datacenter createDatacenter(
+			String name,
+			Class<? extends Datacenter> datacenterClass,
+			List<PowerHost> hostList,
+			VmAllocationPolicy vmAllocationPolicy) throws Exception {
+		String arch = "x86"; // system architecture
+		String os = "Linux"; // operating system
+		String vmm = "Xen";
+		double time_zone = 10.0; // time zone this resource located
+		double cost = 3.0; // the cost of using processing in this resource
+		double costPerMem = 0.05; // the cost of using memory in this resource
+		double costPerStorage = 0.001; // the cost of using storage in this resource
+		double costPerBw = 0.0; // the cost of using bw in this resource
+
+		DatacenterCharacteristics characteristics = new DatacenterCharacteristics(
+				arch,
+				os,
+				vmm,
+				hostList,
+				time_zone,
+				cost,
+				costPerMem,
+				costPerStorage,
+				costPerBw);
+
+		Datacenter datacenter = null;
+		try {
+			datacenter = datacenterClass.getConstructor(
+					String.class,
+					DatacenterCharacteristics.class,
+					VmAllocationPolicy.class,
+					List.class,
+					Double.TYPE).newInstance(
+					name,
+					characteristics,
+					vmAllocationPolicy,
+					new LinkedList<Storage>(),
+					WsoConstants.SCHEDULING_INTERVAL);
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.exit(0);
+		}
+
+		return datacenter;
 	}
 	
 	private static void setSeed(int cloudletSeed) {

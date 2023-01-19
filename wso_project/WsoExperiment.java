@@ -10,8 +10,6 @@ import org.cloudbus.cloudsim.DatacenterBroker;
 import org.cloudbus.cloudsim.Log;
 import org.cloudbus.cloudsim.Vm;
 import org.cloudbus.cloudsim.core.CloudSim;
-import org.cloudbus.cloudsim.examples.power.Constants;
-import org.cloudbus.cloudsim.examples.power.Helper;
 import org.cloudbus.cloudsim.power.PowerDatacenterNonPowerAware;
 import org.cloudbus.cloudsim.power.PowerHost;
 import org.cloudbus.cloudsim.power.PowerVmAllocationPolicySimple;
@@ -30,12 +28,12 @@ public class WsoExperiment {
 	public static void main(String[] args) throws IOException {
 		String experimentName = "wso_experiment";
 
-		Log.setDisabled(!Constants.ENABLE_OUTPUT);
+		Log.setDisabled(!WsoConstants.ENABLE_OUTPUT);
 		Log.printLine("Starting " + experimentName);
 		
-		int[] cloudletsNumber= {10, 22, 30, 40, 30};
-		int[] hostsNumber = {10, 10, 10, 10, 10};
-		int[] vmsPerHostNumber = {10, 10, 10, 10, 10, 10};
+		int[] cloudletsNumber= {10, 220, 60000, 4000};
+		int[] hostsNumber = {5, 5, 5, 5, 5};
+		int[] vmsPerHostNumber = {10, 10, 10, 10, 10};
 
 		try {
 			/*
@@ -45,7 +43,7 @@ public class WsoExperiment {
 			 * BFD if Best Fit Decreasing 
 			 * PCA-BFD if Power and Computation Capacity Best First Decreasing
 			*/
-			String allocationAlgorithm = "PCA-BFD";
+			String allocationAlgorithm = "BF";
 			for(int i = 0; i < cloudletsNumber.length; i++) {
 				makeExperimentWithParameters(cloudletsNumber[i], vmsPerHostNumber[i], 
 						hostsNumber[i], allocationAlgorithm);
@@ -64,8 +62,8 @@ public class WsoExperiment {
 	public static void makeExperimentWithParameters(int numberOfCloudLets, int numberOfVMs, 
 			int numebrOfHosts, String allocationAlgorithm) throws Exception {
 		CloudSim.init(1, Calendar.getInstance(), false);
-		String experimentName = "wso_experiment";
-		String outputFolder = "output";
+//		String experimentName = "wso_experiment";
+//		String outputFolder = "output";
 
 		DatacenterBroker broker = WsoHelper.createBroker(allocationAlgorithm);
 		int brokerId = broker.getId();
@@ -74,10 +72,10 @@ public class WsoExperiment {
 				brokerId,
 				numberOfCloudLets,
 				allocationAlgorithm);
-		List<Vm> vmList = Helper.createVmList(brokerId, numberOfVMs);
-		List<PowerHost> hostList = Helper.createHostList(numebrOfHosts);
+		List<Vm> vmList = WsoHelper.createVmList(brokerId, numberOfVMs);
+		List<PowerHost> hostList = WsoHelper.createHostList(numebrOfHosts);
 
-		PowerDatacenterNonPowerAware datacenter = (PowerDatacenterNonPowerAware) Helper.createDatacenter(
+		PowerDatacenterNonPowerAware datacenter = (PowerDatacenterNonPowerAware) WsoHelper.createDatacenter(
 				"Datacenter",
 				PowerDatacenterNonPowerAware.class,
 				hostList,
@@ -90,10 +88,10 @@ public class WsoExperiment {
 
 		double lastClock = CloudSim.startSimulation();
 
+		CloudSim.stopSimulation();
+		
 		List<Cloudlet> newList = broker.getCloudletReceivedList();
 		Log.printLine("Received " + newList.size() + " cloudlets");
-
-		CloudSim.stopSimulation();
 		
 		time.add(lastClock);
 		energy.add(datacenter.getPower() / (3600 * 1000));
