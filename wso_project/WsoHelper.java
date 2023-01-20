@@ -34,7 +34,7 @@ public class WsoHelper {
 	 * 
 	 * @return the datacenter broker
 	 */
-	public static DatacenterBroker createBroker(String allocationAlgorithm) {
+	public static DatacenterBroker createBroker(String allocationAlgorithm, int numberOfVMs) {
 		
 		DatacenterBroker broker = null;
 		try {		
@@ -43,7 +43,7 @@ public class WsoHelper {
 			}
 			else {
 				
-				broker = new DatacenterBrokerWso("Broker", allocationAlgorithm);
+				broker = new DatacenterBrokerWso("Broker", allocationAlgorithm, numberOfVMs);
 			}
 			
 		} catch (Exception e) {

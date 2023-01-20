@@ -26,9 +26,11 @@ public class DatacenterBrokerWso extends DatacenterBroker {
 	
 	private String allocationAlgorithm;
 	private ArrayList<Long> vmCurrRAM;
+	private static int numOfVMs;
 	
-	public DatacenterBrokerWso(String name, String allocationAlgorithm) throws Exception {
+	public DatacenterBrokerWso(String name, String allocationAlgorithm, int numberOfVMs) throws Exception {
 		super(name);
+		numOfVMs = numberOfVMs;
 
 		setVmList(new ArrayList<Vm>());
 		setVmsCreatedList(new ArrayList<Vm>());
@@ -46,7 +48,7 @@ public class DatacenterBrokerWso extends DatacenterBroker {
 		setVmsToDatacentersMap(new HashMap<Integer, Integer>());
 		setDatacenterCharacteristicsList(new HashMap<Integer, DatacenterCharacteristics>());
 		setCloudletAllocationAlgorithm(allocationAlgorithm);
-		setVmCurrAllocationList();
+		setVmCurrAllocationList(numberOfVMs);
 	}
 	
 	@Override
@@ -96,7 +98,7 @@ public class DatacenterBrokerWso extends DatacenterBroker {
 					vm = getBestFitVm(cloudlet);
 				}
 				if(vm == null) {
-					setVmCurrAllocationList();
+					setVmCurrAllocationList(numOfVMs);
 					if (allocationAlgorithm == "PCA-BFD") {
 						vm = getPCABestFitVm(cloudlet);
 					}
@@ -206,10 +208,10 @@ public class DatacenterBrokerWso extends DatacenterBroker {
 		this.allocationAlgorithm = allocationAlgorithm;
 	}
 	
-	private void setVmCurrAllocationList() {
+	private void setVmCurrAllocationList(int numberOfVms) {
 		vmCurrRAM = new ArrayList <Long> ();
 		long zero = 0;
-		for (int i = 0; i< WsoConstants.NUMBER_OF_VMS; i++) {
+		for (int i = 0; i< numberOfVms; i++) {
 			vmCurrRAM.add(zero);
 		}
 	}

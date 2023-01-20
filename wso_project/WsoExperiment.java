@@ -18,6 +18,7 @@ public class WsoExperiment {
 
 	static List<Double> time = new ArrayList<Double>();
 	static List<Double> energy = new ArrayList<Double>();
+	static List<Long> sizeSum = new ArrayList<Long>();
 	
 	/**
 	 * Creates main() to run this example.
@@ -31,16 +32,17 @@ public class WsoExperiment {
 		Log.setDisabled(!WsoConstants.ENABLE_OUTPUT);
 		Log.printLine("Starting " + experimentName);
 		
-		int[] cloudletsNumber= {10, 220, 60000, 4000};
+		int[] cloudletsNumber= {10, 220, 1000, 4000, 60000};
 		int[] hostsNumber = {5, 5, 5, 5, 5};
-		int[] vmsPerHostNumber = {10, 10, 10, 10, 10};
+		int[] vmsPerHostNumber = {30, 30, 30, 30, 30};
 
 		try {
 			/*
 			 * Choose allocation algorithm
 			 * null if none
 			 * BF if Best Fit
-			 * BFD if Best Fit Decreasing 
+			 * BFD if Best Fit Decreasi
+			 * ng 
 			 * PCA-BFD if Power and Computation Capacity Best First Decreasing
 			*/
 			String allocationAlgorithm = "BF";
@@ -65,7 +67,7 @@ public class WsoExperiment {
 //		String experimentName = "wso_experiment";
 //		String outputFolder = "output";
 
-		DatacenterBroker broker = WsoHelper.createBroker(allocationAlgorithm);
+		DatacenterBroker broker = WsoHelper.createBroker(allocationAlgorithm, numberOfVMs);
 		int brokerId = broker.getId();
 
 		List<Cloudlet> cloudletList = WsoHelper.createCloudletList(
@@ -96,6 +98,12 @@ public class WsoExperiment {
 		time.add(lastClock);
 		energy.add(datacenter.getPower() / (3600 * 1000));
 		
+		long tempSizeSum = 0;
+		for(Cloudlet i : cloudletList) {
+			tempSizeSum = tempSizeSum + i.getCloudletLength();
+		}
+		sizeSum.add(tempSizeSum);
+			
 //		Helper.printResults(
 //				datacenter,
 //				vmList,
@@ -109,7 +117,7 @@ public class WsoExperiment {
 	public static void printSummary() {
 		Log.printLine("-------- SUMMARY --------");
 		for(int i=0; i< time.size(); i++) {
-			Log.printLine("Energy: " + energy.get(i) + ", Time: " + time.get(i));
+			Log.printLine("Energy: " + energy.get(i) + ", Time: " + time.get(i) + ", Effi.: " + sizeSum.get(i)/energy.get(i));
 		}
 	}
 }
