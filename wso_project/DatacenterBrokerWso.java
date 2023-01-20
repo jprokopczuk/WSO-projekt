@@ -6,6 +6,9 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.cloudbus.cloudsim.Cloudlet;
@@ -15,15 +18,19 @@ import org.cloudbus.cloudsim.Log;
 import org.cloudbus.cloudsim.Vm;
 import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.core.CloudSimTags;
+import org.cloudbus.cloudsim.core.SimEvent;
 import org.cloudbus.cloudsim.lists.VmList;
+import org.cloudbus.cloudsim.power.PowerHost;
 
 public class DatacenterBrokerWso extends DatacenterBroker {
 	
 	private String allocationAlgorithm;
-	private ArrayList<Long> vmCurrRam;
+	private ArrayList<Long> vmCurrRAM;
+	private static int numOfVMs;
 	
-	public DatacenterBrokerWso(String name, String allocationAlgorithm) throws Exception {
+	public DatacenterBrokerWso(String name, String allocationAlgorithm, int numberOfVMs) throws Exception {
 		super(name);
+		numOfVMs = numberOfVMs;
 
 		setVmList(new ArrayList<Vm>());
 		setVmsCreatedList(new ArrayList<Vm>());
@@ -41,14 +48,41 @@ public class DatacenterBrokerWso extends DatacenterBroker {
 		setVmsToDatacentersMap(new HashMap<Integer, Integer>());
 		setDatacenterCharacteristicsList(new HashMap<Integer, DatacenterCharacteristics>());
 		setCloudletAllocationAlgorithm(allocationAlgorithm);
-		setVmCurrAllocationList();
+		setVmCurrAllocationList(numberOfVMs);
 	}
+	
+	@Override
+	protected void processCloudletReturn(SimEvent ev) {
+		Cloudlet cloudlet = (Cloudlet) ev.getData();
+		getCloudletReceivedList().add(cloudlet);
+		
+//		long newRAM= vmCurrRAM.get(cloudlet.getVmId()) - cloudlet.getCloudletTotalLength();
+//		vmCurrRAM.set(cloudlet.getVmId(), newRAM);
+		
+		Log.printLine(CloudSim.clock() + ": " + getName() + ": Cloudlet " + cloudlet.getCloudletId()
+				+ " received");
+		cloudletsSubmitted--;
+		if (getCloudletList().size() == 0 && cloudletsSubmitted == 0) { // all cloudlets executed
+			Log.printLine(CloudSim.clock() + ": " + getName() + ": All Cloudlets executed. Finishing...");
+			clearDatacenters();
+			finishExecution();
+		} else { // some cloudlets haven't finished yet
+			if (getCloudletList().size() > 0 && cloudletsSubmitted == 0) {
+				// all the cloudlets sent finished. It means that some bount
+				// cloudlet is waiting its VM be created
+				clearDatacenters();
+				createVmsInDatacenter(0);
+			}
+
+		}
+	}
+
+
 	
 	@Override
 	protected void submitCloudlets() {
 		List <Cloudlet> cloudletSubmitList = getCloudletList();
 		
-		setVmCurrAllocationList();
 		if (allocationAlgorithm == "BFD") {
 			cloudletSubmitList = sortCloudletList(cloudletSubmitList);
 		}
@@ -57,7 +91,22 @@ public class DatacenterBrokerWso extends DatacenterBroker {
 			Vm vm;
 			// if user didn't bind this cloudlet and it has not been executed yet
 			if (cloudlet.getVmId() == -1) {
-				vm = getBestFitVm(cloudlet);
+				if (allocationAlgorithm == "PCA-BFD") {
+					vm = getPCABestFitVm(cloudlet);
+				}
+				else {
+					vm = getBestFitVm(cloudlet);
+				}
+				if(vm == null) {
+					setVmCurrAllocationList(numOfVMs);
+					if (allocationAlgorithm == "PCA-BFD") {
+						vm = getPCABestFitVm(cloudlet);
+					}
+					else {
+						vm = getBestFitVm(cloudlet);
+					}
+				}
+					
 			} else { // submit to the specific vm
 				vm = VmList.getById(getVmsCreatedList(), cloudlet.getVmId());
 				if (vm == null) { // vm was not created
@@ -72,7 +121,6 @@ public class DatacenterBrokerWso extends DatacenterBroker {
 			cloudlet.setVmId(vm.getId());
 			sendNow(getVmsToDatacentersMap().get(vm.getId()), CloudSimTags.CLOUDLET_SUBMIT, cloudlet);
 			cloudletsSubmitted++;
-//			vmIndex = (vmIndex + 1) % getVmsCreatedList().size();
 			getCloudletSubmittedList().add(cloudlet);
 		}
 
@@ -80,41 +128,76 @@ public class DatacenterBrokerWso extends DatacenterBroker {
 		for (Cloudlet cloudlet : getCloudletSubmittedList()) {
 			getCloudletList().remove(cloudlet);
 		}
-		
-		vmCurrRam.clear();
-		
 	}
 	
 	protected Vm getBestFitVm(Cloudlet cloudlet) {
 		List <Vm> vmList = getVmsCreatedList();
 		ArrayList <Long> ramDiff = new ArrayList<Long>();
-		/*
-		 * TUTAJ TRZEBA PODMIENIĆ TO GET CLOUDLET TOTAL NA ODPOWIEDNIĄ RZECZ!
-		 * W ZALEŻNOŚCI OD TEGO JAKA TO BĘDZIE JEDNOSTKA CZY BAJTY CZY MB ZAMIANIC MNOZNIK W 113 LINII
-		 * 
-		 * TRZEBA DOPISAC ALGORYTM Power and Computation Capacity Best First Decreasing
-		 * JAKIES ZRODLO O CO W TYM CHODZI???
-		 */
-		long cloudletSize = cloudlet.getCloudletTotalLength();
+		int hugeNumber = 999999999;
+		long cloudletNumRAM = cloudlet.getCloudletTotalLength();
 		
 		for (int i=0; i < vmList.size(); i++) {				
-			long vmRamByte = (vmList.get(i).getCurrentAllocatedRam() * 1000000) - vmCurrRam.get(i);
-			long diff = vmRamByte - cloudletSize;
+			long vmNumRam = (vmList.get(i).getRam() - vmCurrRAM.get(i)) * 1000000;
+			long diff = vmNumRam - cloudletNumRAM;
 			
 			if (diff < 0) {
-				diff = cloudletSize * 10000000;
+				diff = hugeNumber;
 			}
 			ramDiff.add(diff);
 		}
-		int indexOfMinimum = ramDiff.indexOf(Collections.min(ramDiff));
-		long newRamValue = vmCurrRam.get(indexOfMinimum) + cloudletSize;
-		vmCurrRam.set(indexOfMinimum, newRamValue);
 		
+		// if there is no VM with enough memory
+		int numVM = 0;
+		for (long element : ramDiff) {
+		  if (element == hugeNumber) numVM++;
+		}
+		
+		if (numVM == ramDiff.size()){
+			return null;
+		}
+		
+		int indexOfMinimum = ramDiff.indexOf(Collections.min(ramDiff));
+		long newRamValue = vmCurrRAM.get(indexOfMinimum) + cloudletNumRAM;
+		vmCurrRAM.set(indexOfMinimum, newRamValue);
+		return vmList.get(indexOfMinimum);
+	}
+	
+	protected Vm getPCABestFitVm(Cloudlet cloudlet) {
+		List <Vm> vmList = getVmsCreatedList();
+		ArrayList <Double> ramRatioDiff = new ArrayList<Double>();
+		int hugeNumber = 999999999;
+		long cloudletNumRAM = cloudlet.getCloudletTotalLength();
+		
+		for (int i=0; i < vmList.size(); i++) {				
+			long vmNumRam = (vmList.get(i).getRam() - vmCurrRAM.get(i)) * 1000000;
+			PowerHost host = (PowerHost) vmList.get(i).getHost();
+			
+			double ratio = host.getMaxPower() / vmNumRam;
+			
+			if (vmNumRam == 0) {
+				ratio = hugeNumber;
+			}
+			
+			ramRatioDiff.add(ratio);
+		}
+		
+		// if there is no VM with enough memory
+		int numVM = 0;
+		for (double element : ramRatioDiff) {
+		  if (element == hugeNumber) numVM++;
+		}
+		
+		if (numVM == ramRatioDiff.size()){
+			return null;
+		}
+		
+		int indexOfMinimum = ramRatioDiff.indexOf(Collections.min(ramRatioDiff));
+		long newRamValue = vmCurrRAM.get(indexOfMinimum) + cloudletNumRAM;
+		vmCurrRAM.set(indexOfMinimum, newRamValue);
 		return vmList.get(indexOfMinimum);
 	}
 	
 	private List<Cloudlet> sortCloudletList(List<Cloudlet> cloudletSubmitList) {
-
 		List<Cloudlet> sortedCloudletList = cloudletSubmitList.stream()
 		        .sorted(Comparator.comparingLong(Cloudlet::getCloudletTotalLength).reversed())
 		        .collect(Collectors.toList());
@@ -125,12 +208,11 @@ public class DatacenterBrokerWso extends DatacenterBroker {
 		this.allocationAlgorithm = allocationAlgorithm;
 	}
 	
-	private void setVmCurrAllocationList() {
-		this.vmCurrRam = new ArrayList<Long>();
+	private void setVmCurrAllocationList(int numberOfVms) {
+		vmCurrRAM = new ArrayList <Long> ();
 		long zero = 0;
-		for (int i=0; i< getVmsCreatedList().size(); i++) {
-			vmCurrRam.add(zero);
+		for (int i = 0; i< numberOfVms; i++) {
+			vmCurrRAM.add(zero);
 		}
 	}
-
 }
