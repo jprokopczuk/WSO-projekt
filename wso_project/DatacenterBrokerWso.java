@@ -26,9 +26,11 @@ public class DatacenterBrokerWso extends DatacenterBroker {
 	
 	private String allocationAlgorithm;
 	private ArrayList<Long> vmCurrRAM;
+	private static int numOfVMs;
 	
-	public DatacenterBrokerWso(String name, String allocationAlgorithm) throws Exception {
+	public DatacenterBrokerWso(String name, String allocationAlgorithm, int numberOfVMs) throws Exception {
 		super(name);
+		numOfVMs = numberOfVMs;
 
 		setVmList(new ArrayList<Vm>());
 		setVmsCreatedList(new ArrayList<Vm>());
@@ -46,7 +48,7 @@ public class DatacenterBrokerWso extends DatacenterBroker {
 		setVmsToDatacentersMap(new HashMap<Integer, Integer>());
 		setDatacenterCharacteristicsList(new HashMap<Integer, DatacenterCharacteristics>());
 		setCloudletAllocationAlgorithm(allocationAlgorithm);
-		setVmCurrAllocationList();
+		setVmCurrAllocationList(numberOfVMs);
 	}
 	
 	@Override
@@ -96,7 +98,7 @@ public class DatacenterBrokerWso extends DatacenterBroker {
 					vm = getBestFitVm(cloudlet);
 				}
 				if(vm == null) {
-					setVmCurrAllocationList();
+					setVmCurrAllocationList(numOfVMs);
 					if (allocationAlgorithm == "PCA-BFD") {
 						vm = getPCABestFitVm(cloudlet);
 					}
@@ -163,7 +165,7 @@ public class DatacenterBrokerWso extends DatacenterBroker {
 	protected Vm getPCABestFitVm(Cloudlet cloudlet) {
 		List <Vm> vmList = getVmsCreatedList();
 		ArrayList <Double> ramRatioDiff = new ArrayList<Double>();
-
+		int hugeNumber = 999999999;
 		long cloudletNumRAM = cloudlet.getCloudletTotalLength();
 		
 		for (int i=0; i < vmList.size(); i++) {				
@@ -173,7 +175,7 @@ public class DatacenterBrokerWso extends DatacenterBroker {
 			double ratio = host.getMaxPower() / vmNumRam;
 			
 			if (vmNumRam == 0) {
-				ratio = 10000;
+				ratio = hugeNumber;
 			}
 			
 			ramRatioDiff.add(ratio);
@@ -182,7 +184,7 @@ public class DatacenterBrokerWso extends DatacenterBroker {
 		// if there is no VM with enough memory
 		int numVM = 0;
 		for (double element : ramRatioDiff) {
-		  if (element == 10000) numVM++;
+		  if (element == hugeNumber) numVM++;
 		}
 		
 		if (numVM == ramRatioDiff.size()){
@@ -206,10 +208,10 @@ public class DatacenterBrokerWso extends DatacenterBroker {
 		this.allocationAlgorithm = allocationAlgorithm;
 	}
 	
-	private void setVmCurrAllocationList() {
+	private void setVmCurrAllocationList(int numberOfVms) {
 		vmCurrRAM = new ArrayList <Long> ();
 		long zero = 0;
-		for (int i = 0; i< WsoConstants.NUMBER_OF_VMS; i++) {
+		for (int i = 0; i< numberOfVms; i++) {
 			vmCurrRAM.add(zero);
 		}
 	}
